@@ -1,34 +1,36 @@
-function a=Array_response(Y,Z,phi,theta,kd)
-% This Function generates array response of a planar uniform array as in
-%
-% S. Buzzi, C. D'Andrea , "On Clustered Statistical MIMO Millimeter Wave Channel Simulation",
-% submitted to IEEE Wireless Communications Letters
-%
-% License: This code is licensed under the GPLv2 License.If you in any way 
-% use this code for research that results in publications, please cite our
-% original article listed above.
+function [ vec_a ] = array_response( azmth, elvt, num_ant, spacing_ant, type_ant_array )
+%SPATIAL_SIG calculates a spatial signature vector based on the inputs
+%   Input parameter =========
+%   azmth: azimuth angle
+%   elvt: elevation angle
+%   num_ant: number of the antenna
+%   spacing_ant: normalized antenna spacing
+%   type_ant_array: the type of the antenna array, e.g. UPA, ULA
+%   Output parameter ========
+%   vec_a: the spatial signature
 
-%% INPUT PARAMETERS:
+% normalized antenna spacing multiplied by 2*pi
+kd = 2*pi*spacing_ant;
+j = sqrt(-1);
 
-% Y and Z: number of antennas on the y and x axes of the
-% planar array (e.g., 10 and 5 for a planar array with 50 antennas);
-
-% phi and theta: are the position in azimuth and elevation of 
-% the considered path;
-
-% kd: product of wavenumber,2*pi/lambda, and 
-% the inter-element spacing of the array.
-
-%% OUTPUT PARAMETERS
-
-% a: array response of planar array, column vector with Y*Z elements and
-% unitary norm.
-
-A=zeros(Y,Z); % initialize a temporary matrix 
-for m=1:Y
-    for n=1:Z
-       A(m,n)=exp(1j*kd*((m-1)*sin(phi)*sin(theta)+(n-1)*cos(theta))); % calculate the element of temporary matrix 
-    end
+% generate the spatial signature
+switch type_ant_array
+    case 'ULA'
+        vec_a = exp(j*kd*sin(azmth)*(0:1:(num_ant-1))') / sqrt(num_ant);
+    case 'UPA'
+        % generate the planar array: num_ant = ant_wd * ant_ht
+        num_wd = round(sqrt(num_ant));
+        num_wd = 2^round(log2(num_wd));
+        num_ht = round(num_ant/num_wd);
+        if num_ant ~= num_wd*num_ht
+            error('Inappropriate antenna number for the UPA.');
+        end
+        
+        vec_a = exp(j*kd*sin(azmth)*sin(elvt)*(0:1:(num_wd-1))') * ...
+            exp(j*kd*cos(elvt)*(0:1:(num_ht-1))) / sqrt(num_ant);
+        vec_a = reshape(vec_a, num_ant, 1);
+    otherwise
+        error('Unacceptable array type.');
 end
-a=A(:)/sqrt(Y*Z); %dispose elements in a vector
+
 end

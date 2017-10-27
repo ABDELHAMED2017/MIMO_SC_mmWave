@@ -1,4 +1,4 @@
-function [L]=Evaluation_Path_loss(path_length,f,scenario,LOS)
+function [L_dB]=Evaluation_Path_loss(path_length,f,scenario,LOS)
 % Function for the evaluation of the attenuation as in equation(2) in
 %
 % S. Buzzi, C. D'Andrea , "On Clustered Statistical MIMO Millimeter Wave Channel Simulation",
@@ -28,8 +28,8 @@ function [L]=Evaluation_Path_loss(path_length,f,scenario,LOS)
 
 %% OUTPUT PARAMETERS
 
-% L: attenuation of the path in the indicated scenario expressed in
-% naturals
+% L_dB: attenuation of the path in the indicated scenario expressed in
+% dB
 
 if scenario==1 % 'Open square'
     if LOS==1
@@ -81,8 +81,6 @@ elseif scenario==4 % 'Shopping mall'
     end
 end
 L_dB=20*log10(4*pi*f/3e8)+10*n*(1+b*((f-f0)/f0))*log10(path_length)+normrnd(0,sigma);
-
-L=10^(-L_dB/10);
 
 end
 

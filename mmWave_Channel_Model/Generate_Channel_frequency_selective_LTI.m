@@ -197,8 +197,8 @@ if u<=P_LOS
     tau_LOS=d/3e8;
     
     % Array responses 
-    at=Array_response(Yt,Zt,phi_t_LOS,theta_t_LOS,kd);
-    ar=Array_response(Yr,Zr,phi_r_LOS,theta_r_LOS,kd);
+    at=array_response(phi_t_LOS,theta_t_LOS,[Yt,Zt], kd/(2*pi), 'UPA');
+    ar=array_response(phi_r_LOS,theta_r_LOS,[Yr,Zr], kd/(2*pi), 'UPA');
     
     % Calculation of LOS component as in equation (3) in the article
     % listed above
@@ -240,8 +240,8 @@ for ii=1:Ncl,
         alpha_ll=alpha_ii(ll,1);
         
         % Array responses 
-        at=Array_response(Yt,Zt,phit_ll,thetat_ll,kd);
-        ar=Array_response(Yr,Zr,phir_ll,thetar_ll,kd);
+        at=array_response(phit_ll,thetat_ll,[Yt,Zt], kd/(2*pi), 'UPA');
+        ar=array_response(phir_ll,thetar_ll,[Yr,Zr], kd/(2*pi), 'UPA');
         
         % Calculation of the attenuation of each path as in equation (2)
         % in article listed above
