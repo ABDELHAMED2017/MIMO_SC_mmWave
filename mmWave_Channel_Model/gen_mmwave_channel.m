@@ -1,9 +1,10 @@
 function [ mmwave_ch_sample, los_vec_at, los_vec_ar, nlos_vec_at, nlos_vec_ar ] = ...
-    gen_mmwave_channel( dev_config, ch_prop )
+    gen_mmwave_channel( dev_config, ch_prop, simu_time )
 %GEN_MMWAVE_CH generates one sample of the mmWave channel in P2P scenario
 %   Input parameter ========
 %   dev_config: the configuration of the tx/rx devices
 %   ch_prop: the characterizations of the mmWave channle
+%   simu_time: simulation time point
 %   Output parameter =======
 %   mmwave_ch_sample: the samples of the mmWave channel
 %   los_vec_at: the samples of the LOS AOD spatial signature
@@ -12,13 +13,18 @@ function [ mmwave_ch_sample, los_vec_at, los_vec_ar, nlos_vec_at, nlos_vec_ar ] 
 %   nlos_vec_ar: the samples of the NLOS AOA spatial signature
 %   TODO: LOS prob, Doppler shift
 
+if nargin <= 2
+    simu_time = 0;
+end
 j = sqrt(-1);
 
 %% parameter initialization
 % device config
 carrier_freq = dev_config.carrier_freq;
-pos_tx = dev_config.pos_tx;
-pos_rx = dev_config.pos_rx;
+veloc_tx = dev_config.veloc_tx;
+veloc_rx = dev_config.veloc_rx;
+pos_tx = dev_config.pos_tx + veloc_tx * simu_time;
+pos_rx = dev_config.pos_rx + veloc_rx * simu_time;
 num_ant_tx = dev_config.num_ant_tx;
 num_ant_rx = dev_config.num_ant_rx;
 spacing_ant_tx = dev_config.spacing_ant_tx;
@@ -45,10 +51,8 @@ elvt_spread_rx = ch_prop.elvt_spread_rx * pi/180;
 
 
 % generate the mmWave channel sample based on the angles of each ray
-mmwave_ch_sample = zeros(num_ant_rx, num_ant_tx);
 nlos_vec_at = zeros(num_ant_tx, num_ray, num_cluster);
 nlos_vec_ar = zeros(num_ant_rx, num_ray, num_cluster);
-fdmax = 0; % maximum Doppler shift
 
 % TX/RX position
 delta_x = pos_tx(1) - pos_rx(1);
@@ -71,15 +75,17 @@ los_elvt_t = elvt_los;
 los_elvt_r = -elvt_los;
 los_vec_at = array_response( los_azmth_t, los_elvt_t, num_ant_tx, spacing_ant_tx, type_array_tx );
 los_vec_ar = array_response( los_azmth_r, los_elvt_r, num_ant_rx, spacing_ant_rx, type_array_rx );
-% TODO: add doppler shift here
-los_motion_angle = 0;
-los_doppler_phase = exp(j*2*pi*fdmax*los_motion_angle);
+% LOS Doppler shift
+los_angle_at = [sin(los_elvt_t)*cos(los_azmth_t), sin(los_elvt_t)*sin(los_azmth_t), cos(los_elvt_t)];
+los_angle_ar = [sin(los_elvt_r)*cos(los_azmth_r), sin(los_elvt_r)*sin(los_azmth_r), cos(los_elvt_r)];
+los_doppler_freq = carrier_freq/3e8*(dot(veloc_rx, los_angle_ar) + dot(veloc_tx, los_angle_at));
+los_doppler_phase = exp(j*2*pi*los_doppler_freq*simu_time);
 los_link = sqrt(num_ant_tx*num_ant_rx) * los_rand_phase * sqrt(los_path_gain) * ...
     los_doppler_phase * los_vec_ar * los_vec_at';
 % LOS probability
 los_prob = los_probability(dis_tx_rx, scenario);
-mmwave_ch_sample = mmwave_ch_sample + (rand() <= los_prob) * los_link;
-
+mmwave_ch_sample.los_prob = los_prob;
+mmwave_ch_sample.los_link = los_link;
 
 %% Generate NLOS paths
 % cluster mean angles
@@ -124,17 +130,21 @@ for index_cls = 1:num_cluster
             array_response(nlos_azmth_ray_tx(index_ray), nlos_elvt_ray_tx(index_ray), num_ant_tx, spacing_ant_tx, type_array_tx);
         nlos_vec_ar(:, index_ray, index_cls) = ...
             array_response(nlos_azmth_ray_rx(index_ray), nlos_elvt_ray_rx(index_ray), num_ant_rx, spacing_ant_rx, type_array_rx);
-        % TODO: doppler shift
-        nlos_doppler_phase = 1;
+        % NLOS Doppler shift
+        nlos_angle_at = [sin(nlos_elvt_ray_tx(index_ray))*cos(nlos_azmth_ray_tx(index_ray)), ...
+            sin(nlos_elvt_ray_tx(index_ray))*sin(nlos_azmth_ray_tx(index_ray)), cos(nlos_elvt_ray_tx(index_ray))];
+        nlos_angle_ar = [sin(nlos_elvt_ray_rx(index_ray))*cos(nlos_azmth_ray_rx(index_ray)), ...
+            sin(nlos_elvt_ray_rx(index_ray))*sin(nlos_azmth_ray_rx(index_ray)), cos(nlos_elvt_ray_rx(index_ray))];
+        nlos_doppler_freq = carrier_freq/3e8*(dot(veloc_rx, nlos_angle_ar) + dot(veloc_tx, nlos_angle_at));
+        nlos_doppler_phase = exp(j*2*pi*nlos_doppler_freq*simu_time);
+        
         nlos_link = nlos_link + sqrt(nlos_path_gain) * ...
             nlos_alpha(index_ray, index_cls) * nlos_doppler_phase * ...
             nlos_vec_ar(:, index_ray, index_cls) * nlos_vec_at(:, index_ray, index_cls)';
     end
 end
 nlos_link = sqrt(num_ant_tx*num_ant_rx / (num_ray)) * nlos_link;
-%10*log10(norm(los_link, 'fro')^2/norm(nlos_link, 'fro')^2)
-%norm(sqrt(num_ant_tx*num_ant_rx / (num_ray)) * nlos_link, 'fro')^2/num_ant_rx/num_ant_tx
-mmwave_ch_sample = mmwave_ch_sample + nlos_link;
+mmwave_ch_sample.nlos_link = nlos_link;
         
 end
 
