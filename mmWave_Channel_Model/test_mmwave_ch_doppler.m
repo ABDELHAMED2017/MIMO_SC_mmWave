@@ -16,8 +16,8 @@ ch_prop.scenario = 2;
 ch_prop.lambda_cluster = 1.9;
 ch_prop.num_ray = 20;
 % cluster power fraction
-ch_prop.power_frac_tau = 1.1;
-ch_prop.power_frac_sigma = 1;
+ch_prop.power_frac_tau = 3;
+ch_prop.power_frac_sigma = 2;
 % angle of departure (AOD)
 ch_prop.azmth_range_tx = [-90, 90];
 ch_prop.azmth_spread_tx = 5;

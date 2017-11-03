@@ -11,7 +11,6 @@ function [ mmwave_ch_sample, los_vec_at, los_vec_ar, nlos_vec_at, nlos_vec_ar ] 
 %   los_vec_ar: the samples of the LOS AOA spatial signature
 %   nlos_vec_at: the samples of the NLOS AOD spatial signature
 %   nlos_vec_ar: the samples of the NLOS AOA spatial signature
-%   TODO: LOS prob, Doppler shift
 
 if nargin <= 2
     simu_time = 0;
@@ -49,7 +48,6 @@ azmth_spread_rx = ch_prop.azmth_spread_rx * pi/180;
 elvt_range_rx = ch_prop.elvt_range_rx * pi/180;
 elvt_spread_rx = ch_prop.elvt_spread_rx * pi/180;
 
-
 % generate the mmWave channel sample based on the angles of each ray
 nlos_vec_at = zeros(num_ant_tx, num_ray, num_cluster);
 nlos_vec_ar = zeros(num_ant_rx, num_ray, num_cluster);
@@ -82,10 +80,8 @@ los_doppler_freq = carrier_freq/3e8*(dot(veloc_rx, los_angle_ar) + dot(veloc_tx,
 los_doppler_phase = exp(j*2*pi*los_doppler_freq*simu_time);
 los_link = sqrt(num_ant_tx*num_ant_rx) * los_rand_phase * sqrt(los_path_gain) * ...
     los_doppler_phase * los_vec_ar * los_vec_at';
-% LOS probability
-los_prob = los_probability(dis_tx_rx, scenario);
-mmwave_ch_sample.los_prob = los_prob;
 mmwave_ch_sample.los_link = los_link;
+
 
 %% Generate NLOS paths
 % cluster mean angles
@@ -145,6 +141,10 @@ for index_cls = 1:num_cluster
 end
 nlos_link = sqrt(num_ant_tx*num_ant_rx / (num_ray)) * nlos_link;
 mmwave_ch_sample.nlos_link = nlos_link;
+
+
+%% link state
+mmwave_ch_sample.link_state = gen_link_state(dis_tx_rx);
         
 end
 
