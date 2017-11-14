@@ -58,7 +58,7 @@ plot_rx_pos_range = [1, 5, 10, 15, 19];
 dist_legend = cell(length(plot_rx_pos_range), 1);
 for pos_idx = 1:length(plot_rx_pos_range)
     dev_config.pos_rx(1) = rx_pos_range(plot_rx_pos_range(pos_idx));
-    cdfplot(ch_power_res(:, pos_idx));
+    cdfplot(-ch_power_res(:, pos_idx));
     dist_legend{pos_idx} = sprintf('d = %.4f', norm(dev_config.pos_rx - dev_config.pos_tx, 2));
     hold on;
 end
