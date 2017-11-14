@@ -1,1 +1,4 @@
 *.mat
+*.png
+*.fig
+*.eps
